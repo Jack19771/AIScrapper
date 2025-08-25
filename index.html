@@ -1,0 +1,2052 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CVcraft - AI CV Generator</title>
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            /* Modern Color Palette */
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-tertiary: #1a1a1a;
+            --bg-card: #161616;
+            --bg-elevated: #1e1e1e;
+            
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --text-muted: #666666;
+            
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --accent-light: rgba(59, 130, 246, 0.1);
+            
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            
+            --border: rgba(255, 255, 255, 0.08);
+            --border-hover: rgba(255, 255, 255, 0.16);
+            
+            /* Spacing */
+            --space-xs: 0.25rem;
+            --space-sm: 0.5rem;
+            --space-md: 1rem;
+            --space-lg: 1.5rem;
+            --space-xl: 2rem;
+            --space-2xl: 3rem;
+            
+            /* Border Radius */
+            --radius-sm: 6px;
+            --radius-md: 8px;
+            --radius-lg: 12px;
+            --radius-xl: 16px;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Navigation */
+        .nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(10, 10, 10, 0.8);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            padding: 0 var(--space-xl);
+        }
+        
+        .nav-brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            text-decoration: none;
+        }
+        
+        .nav-brand i {
+            color: var(--accent);
+            margin-right: var(--space-sm);
+        }
+        
+        .nav-menu {
+            margin-left: auto;
+            display: flex;
+            gap: var(--space-lg);
+            align-items: center;
+        }
+        
+        .nav-link {
+            color: var(--text-secondary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.875rem;
+            transition: color 0.2s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+
+        /* Status Indicator in Nav */
+        .nav-status {
+            margin-left: var(--space-md);
+            cursor: pointer;
+            position: relative;
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: background-color 0.2s ease;
+        }
+
+        .status-indicator:hover {
+            background: var(--bg-tertiary);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: background-color 0.3s ease;
+        }
+
+        .status-healthy .status-dot {
+            background: var(--success);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+
+        .status-degraded .status-dot {
+            background: var(--warning);
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
+        }
+
+        .status-down .status-dot {
+            background: var(--error);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+
+        /* Health Modal */
+        .health-modal {
+            position: fixed;
+            top: 70px;
+            right: var(--space-xl);
+            width: 320px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-xl);
+            z-index: 1500;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .health-modal.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .health-modal-header {
+            padding: var(--space-lg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .health-modal-title {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: var(--space-xs);
+        }
+
+        .health-modal-subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        .health-modal-body {
+            padding: var(--space-lg);
+        }
+
+        .health-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-sm) 0;
+            font-size: 0.875rem;
+        }
+
+        .health-item-status {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+
+        .health-item-status i {
+            font-size: 0.75rem;
+        }
+
+        .status-ok { color: var(--success); }
+        .status-warning { color: var(--warning); }
+        .status-error { color: var(--error); }
+        
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 var(--space-xl);
+        }
+        
+        .main {
+            margin-top: 60px;
+            min-height: calc(100vh - 60px);
+        }
+        
+        /* Hero Section */
+        .hero {
+            padding: var(--space-2xl) 0;
+            text-align: center;
+        }
+        
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--space-xs);
+            padding: var(--space-xs) var(--space-md);
+            background: var(--accent-light);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-bottom: var(--space-lg);
+        }
+        
+        .hero-title {
+            font-size: clamp(2.5rem, 5vw, 4rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: var(--space-md);
+            background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .hero-subtitle {
+            font-size: 1.25rem;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-2xl);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Supported Portals Section */
+        .portals-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--space-md);
+        }
+
+        .portal-card {
+            padding: var(--space-md);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            transition: all 0.2s ease;
+        }
+
+        .portal-card:hover {
+            border-color: var(--border-hover);
+            transform: translateY(-1px);
+        }
+
+        .portal-header {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            margin-bottom: var(--space-sm);
+        }
+
+        .portal-icon {
+            width: 24px;
+            height: 24px;
+            background: var(--accent-light);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 0.75rem;
+        }
+
+        .portal-name {
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .portal-status {
+            margin-left: auto;
+            padding: var(--space-xs) var(--space-sm);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .status-fully_supported {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+
+        .status-supported {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-basic_support {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+        }
+
+        .portal-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            margin-top: var(--space-sm);
+        }
+
+        .feature-tag {
+            padding: 2px var(--space-xs);
+            background: var(--bg-primary);
+            border-radius: 4px;
+            font-size: 0.625rem;
+            color: var(--text-muted);
+        }
+
+        .portal-loading {
+            grid-column: 1 / -1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: var(--space-lg);
+            color: var(--text-secondary);
+        }
+        
+        /* Card Component */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .card-header {
+            padding: var(--space-xl);
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-elevated);
+        }
+        
+        .card-body {
+            padding: var(--space-xl);
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-2xl);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+            margin-bottom: var(--space-lg);
+        }
+
+        .upload-area:hover {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-area.drag-over {
+            border-color: var(--accent);
+            background: var(--accent-light);
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: var(--text-muted);
+            margin-bottom: var(--space-md);
+        }
+
+        .upload-text {
+            font-size: 1rem;
+            margin-bottom: var(--space-sm);
+        }
+
+        .upload-formats {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .file-selected {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .file-selected .upload-icon {
+            color: var(--success);
+        }
+        
+        /* Steps Component */
+        .steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--space-2xl);
+            gap: var(--space-lg);
+        }
+        
+        .step {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .step.active {
+            color: var(--accent);
+        }
+        
+        .step.completed {
+            color: var(--success);
+        }
+        
+        .step-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--bg-tertiary);
+            border: 2px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .step.active .step-number {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+        
+        .step.completed .step-number {
+            background: var(--success);
+            border-color: var(--success);
+            color: white;
+        }
+        
+        .step-connector {
+            width: 60px;
+            height: 2px;
+            background: var(--border);
+            margin: 0 var(--space-md);
+        }
+        
+        /* Input Components */
+        .input-group {
+            margin-bottom: var(--space-lg);
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .input {
+            width: 100%;
+            padding: var(--space-md);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+        }
+        
+        .input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-light);
+        }
+        
+        .input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        /* Button Components */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) var(--space-lg);
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+        
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--bg-elevated);
+            border-color: var(--border-hover);
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-lg {
+            padding: var(--space-lg) var(--space-xl);
+            font-size: 1rem;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn:disabled:hover {
+            transform: none;
+        }
+        
+        /* Job Analysis Section */
+        .job-analysis {
+            display: none;
+            margin-top: var(--space-2xl);
+        }
+        
+        .job-analysis.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+        
+        .job-header {
+            display: flex;
+            align-items: flex-start;
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .job-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--accent-light);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--accent);
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+        
+        .job-info h3 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .job-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-lg);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        .job-meta-item {
+            display: flex;
+            align-items: center;
+            gap: var(--space-xs);
+        }
+        
+        .skills-container {
+            margin-top: var(--space-lg);
+        }
+        
+        .skills-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-sm);
+        }
+        
+        .skill-tag {
+            padding: var(--space-xs) var(--space-sm);
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        /* Modal/Drawer */
+        .drawer-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .drawer-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .drawer {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            z-index: 2001;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+        
+        .drawer.show {
+            right: 0;
+        }
+        
+        .drawer-header {
+            padding: var(--space-xl);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+        
+        .drawer-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+        
+        .drawer-close {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: var(--space-sm);
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+        }
+        
+        .drawer-close:hover {
+            color: var(--text-primary);
+            background: var(--bg-tertiary);
+        }
+        
+        .drawer-body {
+            padding: var(--space-xl);
+        }
+        
+        /* Loading State */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: var(--space-2xl);
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto var(--space-lg);
+        }
+        
+        /* CV Result */
+        .cv-result {
+            display: none;
+            margin-top: var(--space-2xl);
+        }
+        
+        .cv-result.show {
+            display: block;
+            animation: slideUp 0.5s ease;
+        }
+        
+        .cv-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--space-lg);
+            margin-bottom: var(--space-xl);
+        }
+        
+        .cv-stat {
+            padding: var(--space-lg);
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            text-align: center;
+        }
+        
+        .cv-stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .cv-stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .score-excellent { color: var(--success); }
+        .score-good { color: var(--warning); }
+        .score-poor { color: var(--error); }
+        
+        .cv-content {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-xl);
+            font-family: 'Times New Roman', serif;
+            line-height: 1.6;
+            white-space: pre-line;
+            font-size: 0.875rem;
+        }
+        
+        .cv-actions {
+            display: flex;
+            gap: var(--space-md);
+            margin-top: var(--space-xl);
+            justify-content: center;
+        }
+
+        /* Toast Notifications */
+        .toast {
+            position: fixed;
+            top: 80px;
+            right: var(--space-xl);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: var(--space-lg);
+            box-shadow: var(--shadow-xl);
+            z-index: 3000;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast-success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast-error {
+            border-left: 4px solid var(--error);
+        }
+
+        .toast-warning {
+            border-left: 4px solid var(--warning);
+        }
+        
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 var(--space-md);
+            }
+            
+            .drawer {
+                width: 100%;
+                right: -100%;
+            }
+            
+            .job-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            
+            .steps {
+                flex-direction: column;
+                gap: var(--space-md);
+            }
+            
+            .step-connector {
+                display: none;
+            }
+            
+            .cv-actions {
+                flex-direction: column;
+            }
+
+            .health-modal {
+                right: var(--space-md);
+                width: calc(100% - 2rem);
+            }
+
+            .nav {
+                padding: 0 var(--space-md);
+            }
+
+            .nav-menu {
+                gap: var(--space-md);
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="#" class="nav-brand">
+            <i class="fas fa-robot"></i>CVcraft
+        </a>
+        <div class="nav-menu">
+            <a href="#" class="nav-link">Features</a>
+            <a href="#" class="nav-link">Pricing</a>
+            <a href="#" class="nav-link">About</a>
+            
+            <!-- Status Indicator -->
+            <div class="nav-status" id="navStatus" onclick="toggleHealthModal()">
+                <div class="status-indicator" id="statusIndicator">
+                    <div class="status-dot"></div>
+                    <span id="statusText">Checking...</span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Health Modal -->
+    <div class="health-modal" id="healthModal">
+        <div class="health-modal-header">
+            <div class="health-modal-title">System Status</div>
+            <div class="health-modal-subtitle" id="healthTimestamp">Last checked: --</div>
+        </div>
+        <div class="health-modal-body" id="healthDetails">
+            <div class="health-item">
+                <span>Loading system status...</span>
+                <div class="spinner" style="width: 16px; height: 16px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-badge">
+                    <i class="fas fa-sparkles"></i>
+                    <span>Powered by AI</span>
+                </div>
+                <h1 class="hero-title">
+                    Create perfect CVs<br>in seconds, not hours
+                </h1>
+                <p class="hero-subtitle">
+                    Our AI analyzes job postings and crafts tailored CVs that pass ATS systems and impress recruiters.
+                </p>
+            </section>
+
+            <!-- Supported Portals Section -->
+            <section style="margin-bottom: var(--space-2xl);">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 style="font-size: 1rem; font-weight: 600;">Supported Job Portals</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="portals-grid" id="supportedPortals">
+                            <!-- Loading placeholder -->
+                            <div class="portal-loading">
+                                <div class="spinner" style="width: 20px; height: 20px; margin: 0 auto;"></div>
+                                <span style="margin-left: var(--space-sm); font-size: 0.875rem;">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Steps -->
+            <div class="steps">
+                <div class="step active" id="step1">
+                    <div class="step-number">1</div>
+                    <span>Job URL</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" id="step2">
+                    <div class="step-number">2</div>
+                    <span>Your Profile</span>
+                </div>
+                <div class="step-connector"></div>
+                <div class="step" id="step3">
+                    <div class="step-number">3</div>
+                    <span>Generate</span>
+                </div>
+            </div>
+
+            <!-- Main Card -->
+            <div class="card">
+                <div class="card-header">
+                    <h2 style="font-size: 1.25rem; font-weight: 600;">Start with a job posting</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-xs);">
+                        Paste the URL of any job posting from supported platforms
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="input-group">
+                        <label class="input-label" for="jobUrl">Job Posting URL</label>
+                        <input 
+                            type="url" 
+                            id="jobUrl" 
+                            class="input" 
+                            placeholder="https://pracuj.pl/praca/senior-developer..."
+                        >
+                    </div>
+                    <button class="btn btn-primary btn-lg" id="analyzeBtn" onclick="analyzeJob()">
+                        <i class="fas fa-search"></i>
+                        Analyze Job
+                    </button>
+                </div>
+            </div>
+
+            <!-- Upload CV Option -->
+            <div class="card" style="margin-top: var(--space-xl);">
+                <div class="card-header">
+                    <h2 style="font-size: 1.25rem; font-weight: 600;">Or upload your existing CV</h2>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-xs);">
+                        Upload your current CV and we'll customize it for the job posting
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="upload-area" id="uploadArea" onclick="document.getElementById('cvFile').click()">
+                        <div class="upload-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="upload-text">
+                            <strong>Click to upload</strong> or drag and drop
+                        </div>
+                        <div class="upload-formats">
+                            PDF, DOC, DOCX up to 10MB
+                        </div>
+                        <input type="file" id="cvFile" accept=".pdf,.doc,.docx" style="display: none;">
+                    </div>
+                    <button class="btn btn-primary btn-lg" id="uploadCvBtn" onclick="uploadAndCustomize()" style="display: none;">
+                        <i class="fas fa-magic"></i>
+                        Customize My CV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Loading State -->
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+                <h3 id="loadingText">Analyzing job posting...</h3>
+                <p style="color: var(--text-secondary);" id="loadingSubtext">This might take a few seconds</p>
+            </div>
+
+            <!-- Job Analysis Result -->
+            <div class="card job-analysis" id="jobAnalysis">
+                <div class="card-body">
+                    <div class="job-header">
+                        <div class="job-icon">
+                            <i class="fas fa-briefcase"></i>
+                        </div>
+                        <div class="job-info">
+                            <h3 id="jobTitle">Senior Solutions Architect</h3>
+                            <div class="job-meta">
+                                <div class="job-meta-item">
+                                    <i class="fas fa-building"></i>
+                                    <span id="jobCompany">ALGOTEQUE SERVICES</span>
+                                </div>
+                                <div class="job-meta-item">
+                                    <i class="fas fa-money-bill"></i>
+                                    <span id="jobSalary">120-150 PLN/h</span>
+                                </div>
+                                <div class="job-meta-item">
+                                    <i class="fas fa-chart-line"></i>
+                                    <span id="jobLevel">Senior</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="skills-container">
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-sm);">
+                            Required Skills
+                        </h4>
+                        <div class="skills-grid" id="jobSkills">
+                            <!-- Skills will be populated here -->
+                        </div>
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: var(--space-xl);">
+                        <button class="btn btn-primary btn-lg" onclick="openProfileDrawer()">
+                            <i class="fas fa-user"></i>
+                            Add Your Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CV Result -->
+            <div class="card cv-result" id="cvResult">
+                <div class="card-header">
+                    <h3 style="font-size: 1.25rem; font-weight: 600;">
+                        <i class="fas fa-check-circle" style="color: var(--success); margin-right: var(--space-sm);"></i>
+                        Your tailored CV is ready!
+                    </h3>
+                    <p style="color: var(--text-secondary); font-size: 0.875rem; margin-top: var(--space-xs);" id="cvGenerationInfo">
+                        AI-optimized • ATS-friendly • Keyword-enhanced
+                    </p>
+                </div>
+                <div class="card-body">
+                    <div class="cv-stats">
+                        <div class="cv-stat">
+                            <div class="cv-stat-value score-good" id="matchScore">75%</div>
+                            <div class="cv-stat-label">Match Score</div>
+                        </div>
+                        <div class="cv-stat">
+                            <div class="cv-stat-value" id="matchingCount">8</div>
+                            <div class="cv-stat-label">Matching Skills</div>
+                        </div>
+                        <div class="cv-stat">
+                            <div class="cv-stat-value" id="missingCount">3</div>
+                            <div class="cv-stat-label">Skills to Add</div>
+                        </div>
+                        <div class="cv-stat">
+                            <div class="cv-stat-value" id="atsScore">85</div>
+                            <div class="cv-stat-label">ATS Score</div>
+                        </div>
+                    </div>
+                    
+                    <div class="skills-container" style="margin-bottom: var(--space-xl);">
+                        <h4 style="font-size: 1rem; font-weight: 600; margin-bottom: var(--space-sm);">
+                            <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                            Matching Skills
+                        </h4>
+                        <div class="skills-grid" id="matchingSkills">
+                            <!-- Matching skills -->
+                        </div>
+                        
+                        <h4 style="font-size: 1rem; font-weight: 600; margin: var(--space-lg) 0 var(--space-sm); color: var(--warning);">
+                            <i class="fas fa-plus-circle"></i>
+                            Recommended Additions
+                        </h4>
+                        <div class="skills-grid" id="missingSkills">
+                            <!-- Missing skills -->
+                        </div>
+                    </div>
+                    
+                    <div class="cv-content" id="cvContent">
+                        <!-- CV content will be populated here -->
+                    </div>
+                    
+                    <div class="cv-actions">
+                        <button class="btn btn-success btn-lg" id="downloadBtn" onclick="downloadCV()">
+                            <i class="fas fa-download"></i>
+                            Download PDF
+                        </button>
+                        <button class="btn btn-secondary btn-lg" onclick="copyCV()">
+                            <i class="fas fa-copy"></i>
+                            Copy Text
+                        </button>
+                        <button class="btn btn-secondary btn-lg" onclick="resetForm()">
+                            <i class="fas fa-refresh"></i>
+                            Create Another
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Profile Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeProfileDrawer()"></div>
+    <div class="drawer" id="profileDrawer">
+        <div class="drawer-header">
+            <h3 class="drawer-title">
+                <i class="fas fa-user"></i>
+                Your Profile
+            </h3>
+            <button class="drawer-close" onclick="closeProfileDrawer()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="drawer-body">
+            <form id="profileForm">
+                <div class="input-group">
+                    <label class="input-label" for="userName">Full Name *</label>
+                    <input type="text" id="userName" class="input" placeholder="John Doe" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userEmail">Email Address *</label>
+                    <input type="email" id="userEmail" class="input" placeholder="john@example.com" required>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userPhone">Phone Number</label>
+                    <input type="tel" id="userPhone" class="input" placeholder="+1 (555) 123-4567">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userLocation">Location</label>
+                    <input type="text" id="userLocation" class="input" placeholder="New York, NY">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userLinkedin">LinkedIn Profile</label>
+                    <input type="url" id="userLinkedin" class="input" placeholder="https://linkedin.com/in/johndoe">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userPosition">Current Position</label>
+                    <input type="text" id="userPosition" class="input" placeholder="Senior Software Engineer">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userExperience">Years of Experience</label>
+                    <input type="number" id="userExperience" class="input" min="0" max="50" placeholder="5">
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userSkills">Skills (comma separated)</label>
+                    <textarea id="userSkills" class="input" style="height: 120px; resize: vertical;" placeholder="JavaScript, React, Node.js, Python, AWS, Docker"></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label class="input-label" for="userEducation">Education</label>
+                    <input type="text" id="userEducation" class="input" placeholder="B.S. Computer Science, MIT">
+                </div>
+                
+                <button type="submit" class="btn btn-primary btn-lg" style="width: 100%;" id="generateCvBtn">
+                    <i class="fas fa-magic"></i>
+                    Generate My CV
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let currentJobData = null;
+        let selectedFile = null;
+        let healthCheckInterval = null;
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSupportedPortals();
+            checkHealth();
+            startHealthMonitoring();
+            setupFileUpload();
+            setupClickOutside();
+        });
+
+        // Health monitoring
+        function startHealthMonitoring() {
+            checkHealth(); // Initial check
+            healthCheckInterval = setInterval(checkHealth, 30000); // Check every 30 seconds
+        }
+
+        async function checkHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                
+                updateHealthStatus(data);
+            } catch (error) {
+                console.error('Health check failed:', error);
+                updateHealthStatus(null);
+            }
+        }
+
+        function updateHealthStatus(healthData) {
+            const indicator = document.getElementById('statusIndicator');
+            const statusText = document.getElementById('statusText');
+            const timestamp = document.getElementById('healthTimestamp');
+            const details = document.getElementById('healthDetails');
+
+            if (healthData && healthData.status === 'healthy') {
+                indicator.className = 'status-indicator status-healthy';
+                statusText.textContent = 'Online';
+                
+                // Update timestamp
+                timestamp.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+                
+                // Update details
+                const services = healthData.services || {};
+                details.innerHTML = `
+                    <div class="health-item">
+                        <span>API Status</span>
+                        <div class="health-item-status status-ok">
+                            <i class="fas fa-check"></i>
+                            <span>Healthy</span>
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <span>Job Scraper</span>
+                        <div class="health-item-status ${services.scraper_ready ? 'status-ok' : 'status-error'}">
+                            <i class="fas fa-${services.scraper_ready ? 'check' : 'times'}"></i>
+                            <span>${services.scraper_ready ? 'Ready' : 'Error'}</span>
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <span>AI Generator</span>
+                        <div class="health-item-status ${services.ai_enabled ? 'status-ok' : 'status-error'}">
+                            <i class="fas fa-${services.ai_enabled ? 'check' : 'times'}"></i>
+                            <span>${services.ai_enabled ? 'Ready' : 'Error'}</span>
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <span>PDF Generator</span>
+                        <div class="health-item-status ${services.pdf_generator_ready ? 'status-ok' : 'status-error'}">
+                            <i class="fas fa-${services.pdf_generator_ready ? 'check' : 'times'}"></i>
+                            <span>${services.pdf_generator_ready ? 'Ready' : 'Error'}</span>
+                        </div>
+                    </div>
+                    <div class="health-item">
+                        <span>Selenium Browser</span>
+                        <div class="health-item-status ${services.selenium_available ? 'status-ok' : 'status-warning'}">
+                            <i class="fas fa-${services.selenium_available ? 'check' : 'exclamation-triangle'}"></i>
+                            <span>${services.selenium_available ? 'Available' : 'Limited'}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                indicator.className = 'status-indicator status-down';
+                statusText.textContent = 'Offline';
+                
+                timestamp.textContent = `Last checked: ${new Date().toLocaleTimeString()}`;
+                details.innerHTML = `
+                    <div class="health-item">
+                        <span>API Status</span>
+                        <div class="health-item-status status-error">
+                            <i class="fas fa-times"></i>
+                            <span>Unavailable</span>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        function toggleHealthModal() {
+            const modal = document.getElementById('healthModal');
+            modal.classList.toggle('show');
+        }
+
+        function setupClickOutside() {
+            document.addEventListener('click', function(e) {
+                const modal = document.getElementById('healthModal');
+                const navStatus = document.getElementById('navStatus');
+                
+                if (modal.classList.contains('show') && 
+                    !modal.contains(e.target) && 
+                    !navStatus.contains(e.target)) {
+                    modal.classList.remove('show');
+                }
+            });
+        }
+
+        // Load supported portals
+        async function loadSupportedPortals() {
+            try {
+                const response = await fetch('/api/v1/supported-portals');
+                const data = await response.json();
+                
+                if (data.supported_portals) {
+                    displaySupportedPortals(data.supported_portals);
+                }
+            } catch (error) {
+                console.error('Error loading supported portals:', error);
+                document.getElementById('supportedPortals').innerHTML = `
+                    <div class="portal-loading">
+                        <span style="color: var(--error);">Failed to load supported portals</span>
+                    </div>
+                `;
+            }
+        }
+
+        function displaySupportedPortals(portals) {
+            const container = document.getElementById('supportedPortals');
+            
+            container.innerHTML = portals.map(portal => `
+                <div class="portal-card">
+                    <div class="portal-header">
+                        <div class="portal-icon">
+                            <i class="fas fa-globe"></i>
+                        </div>
+                        <div class="portal-name">${portal.name}</div>
+                        <div class="portal-status status-${portal.status}">
+                            ${portal.status.replace(/_/g, ' ')}
+                        </div>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: var(--space-sm);">
+                        ${portal.domain}
+                    </div>
+                    <div class="portal-features">
+                        ${portal.features.map(feature => `
+                            <span class="feature-tag">${feature.replace(/_/g, ' ')}</span>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // File upload handling
+        function setupFileUpload() {
+            const fileInput = document.getElementById('cvFile');
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadCvBtn');
+
+            fileInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    selectedFile = file;
+                    
+                    uploadArea.classList.add('file-selected');
+                    uploadArea.innerHTML = `
+                        <div class="upload-icon">
+                            <i class="fas fa-file-check"></i>
+                        </div>
+                        <div class="upload-text">
+                            <strong>${file.name}</strong>
+                        </div>
+                        <div class="upload-formats">
+                            ${(file.size / 1024 / 1024).toFixed(2)} MB
+                        </div>
+                    `;
+                    
+                    uploadBtn.style.display = 'inline-flex';
+                    uploadBtn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            // Drag and drop
+            uploadArea.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                uploadArea.classList.add('drag-over');
+            });
+
+            uploadArea.addEventListener('dragleave', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+            });
+
+            uploadArea.addEventListener('drop', function(e) {
+                e.preventDefault();
+                uploadArea.classList.remove('drag-over');
+                
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    const file = files[0];
+                    if (file.type.includes('pdf') || file.name.endsWith('.doc') || file.name.endsWith('.docx')) {
+                        fileInput.files = files;
+                        fileInput.dispatchEvent(new Event('change'));
+                    } else {
+                        showToast('Please upload a PDF, DOC, or DOCX file', 'error');
+                    }
+                }
+            });
+        }
+
+        // Upload and customize function
+        async function uploadAndCustomize() {
+            const jobUrl = document.getElementById('jobUrl').value.trim();
+            
+            if (!jobUrl) {
+                showToast('Please enter a job posting URL first', 'warning');
+                return;
+            }
+            
+            if (!selectedFile) {
+                showToast('Please select a CV file', 'warning');
+                return;
+            }
+            
+            // Show loading
+            setLoadingState(true, 'Processing your CV...', 'AI is analyzing and customizing your CV');
+            updateStepIndicator(3);
+            
+            try {
+                const formData = new FormData();
+                formData.append('job_url', jobUrl);
+                formData.append('cv_file', selectedFile);
+                
+                const response = await fetch('/api/v1/upload-cv', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCVResult(data);
+                    showToast('CV successfully customized!', 'success');
+                } else {
+                    showToast('Failed to customize CV: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        // Update step indicator
+        function updateStepIndicator(step) {
+            document.querySelectorAll('.step').forEach((el, index) => {
+                el.classList.remove('active', 'completed');
+                if (index + 1 < step) {
+                    el.classList.add('completed');
+                } else if (index + 1 === step) {
+                    el.classList.add('active');
+                }
+            });
+        }
+
+        // Loading state management
+        function setLoadingState(loading, title = 'Analyzing job posting...', subtitle = 'This might take a few seconds') {
+            const spinner = document.getElementById('loadingSpinner');
+            const loadingText = document.getElementById('loadingText');
+            const loadingSubtext = document.getElementById('loadingSubtext');
+            const buttons = document.querySelectorAll('.btn');
+            
+            if (loading) {
+                spinner.classList.add('show');
+                loadingText.textContent = title;
+                loadingSubtext.textContent = subtitle;
+                buttons.forEach(btn => btn.disabled = true);
+            } else {
+                spinner.classList.remove('show');
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+        
+        // Analyze job function
+        async function analyzeJob() {
+            const jobUrl = document.getElementById('jobUrl').value.trim();
+            
+            if (!jobUrl) {
+                showToast('Please enter a job posting URL', 'warning');
+                return;
+            }
+            
+            // Show loading
+            setLoadingState(true);
+            document.getElementById('jobAnalysis').classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/v1/scrape', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ url: jobUrl })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    currentJobData = data;
+                    displayJobAnalysis(data);
+                    updateStepIndicator(2);
+                    showToast('Job posting analyzed successfully!', 'success');
+                } else {
+                    showToast('Failed to analyze job posting: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                setLoadingState(false);
+            }
+        }
+        
+        // Display job analysis
+        function displayJobAnalysis(jobData) {
+            document.getElementById('jobTitle').textContent = jobData.title || 'Unknown Position';
+            document.getElementById('jobCompany').textContent = jobData.company || 'Unknown Company';
+            document.getElementById('jobSalary').textContent = jobData.salary || 'Not specified';
+            document.getElementById('jobLevel').textContent = jobData.experience_level || 'Not specified';
+            
+            // Display skills
+            const skillsContainer = document.getElementById('jobSkills');
+            skillsContainer.innerHTML = '';
+            
+            (jobData.skills || []).slice(0, 12).forEach(skill => {
+                const skillTag = document.createElement('div');
+                skillTag.className = 'skill-tag';
+                skillTag.textContent = skill;
+                skillsContainer.appendChild(skillTag);
+            });
+            
+            document.getElementById('jobAnalysis').classList.add('show');
+        }
+        
+        // Profile drawer functions
+        function openProfileDrawer() {
+            document.getElementById('profileDrawer').classList.add('show');
+            document.getElementById('drawerOverlay').classList.add('show');
+            document.body.style.overflow = 'hidden';
+        }
+        
+        function closeProfileDrawer() {
+            document.getElementById('profileDrawer').classList.remove('show');
+            document.getElementById('drawerOverlay').classList.remove('show');
+            document.body.style.overflow = 'auto';
+        }
+        
+        // Generate CV
+        document.getElementById('profileForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentJobData) {
+                showToast('Please analyze a job posting first', 'warning');
+                return;
+            }
+            
+            // Close drawer and show loading
+            closeProfileDrawer();
+            setLoadingState(true, 'Generating your AI-customized CV...', 'Our AI is crafting the perfect CV for this position');
+            updateStepIndicator(3);
+            
+            // Collect user data
+            const userProfile = {
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value,
+                phone: document.getElementById('userPhone').value,
+                location: document.getElementById('userLocation').value,
+                linkedin: document.getElementById('userLinkedin').value,
+                current_position: document.getElementById('userPosition').value,
+                years_experience: parseInt(document.getElementById('userExperience').value) || 0,
+                skills: document.getElementById('userSkills').value.split(',').map(s => s.trim()).filter(s => s),
+                education: document.getElementById('userEducation').value
+            };
+            
+            try {
+                const response = await fetch('/api/v1/generate-cv', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: document.getElementById('jobUrl').value,
+                        user_profile: userProfile
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayCVResult(data);
+                    showToast('CV generated successfully!', 'success');
+                } else {
+                    showToast('Failed to generate CV: ' + (data.error || 'Unknown error'), 'error');
+                }
+            } catch (error) {
+                showToast('Network error. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                setLoadingState(false);
+            }
+        });
+        
+        // Display CV result
+        function displayCVResult(cvData) {
+            const matchScore = Math.round(cvData.match_score || 0);
+            const matchingSkills = cvData.matching_skills || [];
+            const missingSkills = cvData.missing_skills || [];
+            const atsScore = cvData.ats_score || 85;
+            
+            // Update stats
+            document.getElementById('matchScore').textContent = matchScore + '%';
+            document.getElementById('matchingCount').textContent = matchingSkills.length;
+            document.getElementById('missingCount').textContent = missingSkills.length;
+            document.getElementById('atsScore').textContent = atsScore;
+            
+            // Set score colors
+            const scoreEl = document.getElementById('matchScore');
+            scoreEl.className = 'cv-stat-value ' + (matchScore >= 70 ? 'score-excellent' : matchScore >= 40 ? 'score-good' : 'score-poor');
+            
+            const atsEl = document.getElementById('atsScore');
+            atsEl.className = 'cv-stat-value ' + (atsScore >= 80 ? 'score-excellent' : atsScore >= 60 ? 'score-good' : 'score-poor');
+            
+            // Update generation info
+            const isAiOptimized = cvData.ai_optimized ? 'AI-optimized' : 'Standard';
+            document.getElementById('cvGenerationInfo').textContent = `${isAiOptimized} • ATS-friendly • Keyword-enhanced`;
+            
+            // Display matching skills
+            const matchingContainer = document.getElementById('matchingSkills');
+            matchingContainer.innerHTML = '';
+            matchingSkills.forEach(skill => {
+                const skillTag = document.createElement('div');
+                skillTag.className = 'skill-tag';
+                skillTag.style.borderColor = 'var(--success)';
+                skillTag.style.color = 'var(--success)';
+                skillTag.textContent = skill;
+                matchingContainer.appendChild(skillTag);
+            });
+            
+            // Display missing skills
+            const missingContainer = document.getElementById('missingSkills');
+            missingContainer.innerHTML = '';
+            missingSkills.slice(0, 10).forEach(skill => {
+                const skillTag = document.createElement('div');
+                skillTag.className = 'skill-tag';
+                skillTag.style.borderColor = 'var(--warning)';
+                skillTag.style.color = 'var(--warning)';
+                skillTag.textContent = skill;
+                missingContainer.appendChild(skillTag);
+            });
+            
+            // Display CV content
+            const cvContent = cvData.customized_sections?.professional_summary || cvData.cv_content || 'CV content not available';
+            document.getElementById('cvContent').textContent = cvContent;
+            
+            // Show result
+            document.getElementById('cvResult').classList.add('show');
+            document.getElementById('cvResult').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Download CV function
+        async function downloadCV() {
+            const downloadBtn = document.getElementById('downloadBtn');
+            const originalHTML = downloadBtn.innerHTML;
+            
+            try {
+                downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating PDF...';
+                downloadBtn.disabled = true;
+                
+                const userProfile = {
+                    name: document.getElementById('userName').value,
+                    email: document.getElementById('userEmail').value,
+                    phone: document.getElementById('userPhone').value,
+                    location: document.getElementById('userLocation').value,
+                    linkedin: document.getElementById('userLinkedin').value,
+                    current_position: document.getElementById('userPosition').value,
+                    years_experience: parseInt(document.getElementById('userExperience').value) || 0,
+                    skills: document.getElementById('userSkills').value.split(',').map(s => s.trim()).filter(s => s),
+                    education: document.getElementById('userEducation').value
+                };
+                
+                const response = await fetch('/api/v1/download-pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: document.getElementById('jobUrl').value,
+                        user_profile: userProfile
+                    })
+                });
+                
+                if (response.ok) {
+                    // Download PDF
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${userProfile.name.replace(/\s+/g, '_')}_CV_${new Date().getFullYear()}.pdf`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    showToast('PDF downloaded successfully!', 'success');
+                } else {
+                    showToast('Failed to generate PDF', 'error');
+                }
+            } catch (error) {
+                showToast('Error generating PDF', 'error');
+                console.error('PDF generation error:', error);
+            } finally {
+                downloadBtn.innerHTML = originalHTML;
+                downloadBtn.disabled = false;
+            }
+        }
+        
+        function copyCV() {
+            const cvContent = document.getElementById('cvContent').textContent;
+            navigator.clipboard.writeText(cvContent).then(() => {
+                const btn = event.target.closest('.btn');
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 2000);
+                showToast('CV content copied to clipboard!', 'success');
+            }).catch(() => {
+                showToast('Failed to copy to clipboard', 'error');
+            });
+        }
+        
+        function resetForm() {
+            // Reset form and hide sections
+            document.getElementById('profileForm').reset();
+            document.getElementById('jobUrl').value = '';
+            document.getElementById('jobAnalysis').classList.remove('show');
+            document.getElementById('cvResult').classList.remove('show');
+            
+            // Reset upload area
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadCvBtn');
+            const fileInput = document.getElementById('cvFile');
+            
+            uploadArea.classList.remove('file-selected');
+            uploadArea.innerHTML = `
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    <strong>Click to upload</strong> or drag and drop
+                </div>
+                <div class="upload-formats">
+                    PDF, DOC, DOCX up to 10MB
+                </div>
+            `;
+            uploadBtn.style.display = 'none';
+            fileInput.value = '';
+            selectedFile = null;
+            
+            currentJobData = null;
+            updateStepIndicator(1);
+            
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            showToast('Form reset successfully', 'success');
+        }
+
+        // Toast notification system
+        function showToast(message, type = 'success') {
+            // Remove existing toast
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            // Create new toast
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icon = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
+            }[type] || 'check-circle';
+            
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: var(--space-sm);">
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide toast after 4 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Escape key to close modals/drawers
+            if (e.key === 'Escape') {
+                closeProfileDrawer();
+                document.getElementById('healthModal').classList.remove('show');
+            }
+            
+            // Enter key to analyze job if URL is focused
+            if (e.key === 'Enter' && document.activeElement === document.getElementById('jobUrl')) {
+                e.preventDefault();
+                analyzeJob();
+            }
+        });
+
+        // Auto-save form data to localStorage (optional enhancement)
+        function saveFormData() {
+            const formData = {
+                name: document.getElementById('userName').value,
+                email: document.getElementById('userEmail').value,
+                phone: document.getElementById('userPhone').value,
+                location: document.getElementById('userLocation').value,
+                linkedin: document.getElementById('userLinkedin').value,
+                position: document.getElementById('userPosition').value,
+                experience: document.getElementById('userExperience').value,
+                skills: document.getElementById('userSkills').value,
+                education: document.getElementById('userEducation').value
+            };
+            
+            try {
+                localStorage.setItem('cvcraft_form_data', JSON.stringify(formData));
+            } catch (error) {
+                console.log('Could not save form data to localStorage');
+            }
+        }
+
+        function loadFormData() {
+            try {
+                const savedData = localStorage.getItem('cvcraft_form_data');
+                if (savedData) {
+                    const formData = JSON.parse(savedData);
+                    
+                    document.getElementById('userName').value = formData.name || '';
+                    document.getElementById('userEmail').value = formData.email || '';
+                    document.getElementById('userPhone').value = formData.phone || '';
+                    document.getElementById('userLocation').value = formData.location || '';
+                    document.getElementById('userLinkedin').value = formData.linkedin || '';
+                    document.getElementById('userPosition').value = formData.position || '';
+                    document.getElementById('userExperience').value = formData.experience || '';
+                    document.getElementById('userSkills').value = formData.skills || '';
+                    document.getElementById('userEducation').value = formData.education || '';
+                }
+            } catch (error) {
+                console.log('Could not load form data from localStorage');
+            }
+        }
+
+        // Auto-save form data when user types
+        document.getElementById('profileForm').addEventListener('input', saveFormData);
+
+        // Load saved form data when drawer opens
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFormData();
+        });
+
+        // URL validation helper
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        // Enhanced URL input validation
+        document.getElementById('jobUrl').addEventListener('input', function(e) {
+            const url = e.target.value.trim();
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (url && isValidUrl(url)) {
+                analyzeBtn.disabled = false;
+                e.target.style.borderColor = 'var(--success)';
+            } else if (url) {
+                analyzeBtn.disabled = true;
+                e.target.style.borderColor = 'var(--error)';
+            } else {
+                analyzeBtn.disabled = false;
+                e.target.style.borderColor = 'var(--border)';
+            }
+        });
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            if (healthCheckInterval) {
+                clearInterval(healthCheckInterval);
+            }
+        });
+
+        // Analytics tracking (optional - replace with your analytics)
+        function trackEvent(eventName, properties = {}) {
+            // Example: Google Analytics 4
+            if (typeof gtag !== 'undefined') {
+                gtag('event', eventName, properties);
+            }
+            
+            // Example: Custom analytics
+            console.log('Event tracked:', eventName, properties);
+        }
+
+        // Track user interactions
+        document.getElementById('analyzeBtn').addEventListener('click', () => {
+            trackEvent('job_analysis_started', { 
+                url: document.getElementById('jobUrl').value 
+            });
+        });
+
+        document.getElementById('generateCvBtn').addEventListener('click', () => {
+            trackEvent('cv_generation_started');
+        });
+
+        document.getElementById('downloadBtn').addEventListener('click', () => {
+            trackEvent('pdf_download_started');
+        });
+
+        // Performance monitoring
+        function measurePerformance(operationName, startTime) {
+            const endTime = performance.now();
+            const duration = endTime - startTime;
+            console.log(`${operationName} took ${duration.toFixed(2)} milliseconds`);
+            
+            // Track slow operations
+            if (duration > 5000) { // 5 seconds
+                trackEvent('slow_operation', {
+                    operation: operationName,
+                    duration: duration
+                });
+            }
+        }
+
+        // Error boundary for unhandled errors
+        window.addEventListener('error', function(e) {
+            console.error('Unhandled error:', e.error);
+            showToast('An unexpected error occurred. Please try again.', 'error');
+            
+            trackEvent('javascript_error', {
+                message: e.error.message,
+                stack: e.error.stack,
+                filename: e.filename,
+                lineno: e.lineno
+            });
+        });
+
+        // Service worker registration (for PWA features - optional)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registration successful');
+                    })
+                    .catch(function(err) {
+                        console.log('ServiceWorker registration failed');
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
